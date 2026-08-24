@@ -1,8 +1,8 @@
 # Diagrama de clases de M-Team
 
-El modelo se presenta mediante vistas temáticas para mantenerlo legible. Todas las vistas representan el mismo dominio y las clases repetidas son el mismo concepto, mostrado solamente con los miembros relevantes para cada módulo.
+El modelo se presenta mediante vistas temÃ¡ticas para mantenerlo legible. Todas las vistas representan el mismo dominio y las clases repetidas son el mismo concepto, mostrado solamente con los miembros relevantes para cada mÃ³dulo.
 
-Los atributos son privados, las operaciones públicas relevantes comienzan con un verbo y todas las asociaciones indican multiplicidad en ambos extremos. No se muestran claves foráneas porque pertenecen al modelo relacional.
+Los atributos son privados, las operaciones pÃºblicas relevantes comienzan con un verbo y todas las asociaciones indican multiplicidad en ambos extremos. No se muestran claves forÃ¡neas porque pertenecen al modelo relacional.
 
 ## 1. Usuarios y perfiles
 
@@ -25,26 +25,26 @@ class User {
   - hasTemporaryPassword: Boolean
   - createdAt: DateTime
   - updatedAt: DateTime
-  + updateContact(email: String, phone: String): void
-  + changePassword(passwordHash: String): void
-  + assignTemporaryPassword(passwordHash: String): void
-  + activate(): void
-  + deactivate(): void
-  + canAuthenticate(): Boolean
+  + updateContact(email: String, phone: String) void
+  + changePassword(passwordHash: String) void
+  + assignTemporaryPassword(passwordHash: String) void
+  + activate() void
+  + deactivate() void
+  + canAuthenticate() Boolean
 }
 
 class MemberProfile {
   - id: UUID
   - emergencyContactName: String
   - emergencyContactPhone: String
-  + updateEmergencyContact(name: String, phone: String): void
+  + updateEmergencyContact(name: String, phone: String) void
 }
 
 class TrainerProfile {
   - id: UUID
   - specialty: String
   - description: String
-  + updateProfessionalProfile(specialty: String, description: String): void
+  + updateProfessionalProfile(specialty: String, description: String) void
 }
 
 class UserAuditLog {
@@ -59,10 +59,11 @@ User "1" *-- "0..1" MemberProfile : owns
 User "1" *-- "0..1" TrainerProfile : owns
 User "1" -- "0..*" UserAuditLog : auditedUser
 User "1" -- "0..*" UserAuditLog : performedBy
-note for User "{xor: MemberProfile, TrainerProfile}\nMEMBER requires MemberProfile\nTRAINER requires TrainerProfile\nADMIN requires neither profile"
 ```
 
-## 2. Cuota, pagos y aptos médicos
+RestricciÃ³n de perfiles: `MemberProfile` y `TrainerProfile` son mutuamente excluyentes. Un usuario con rol `MEMBER` requiere `MemberProfile`; uno con rol `TRAINER` requiere `TrainerProfile`; un usuario `ADMIN` no requiere ninguno de los dos.
+
+## 2. Cuota, pagos y aptos mÃ©dicos
 
 ```mermaid
 classDiagram
@@ -96,10 +97,10 @@ class Payment {
   - expiresAt: DateTime
   - voidedAt: DateTime [0..1]
   - voidReason: String [0..1]
-  + accredit(accreditedAt: DateTime): void
-  + voidPayment(reason: String, voidedAt: DateTime): void
-  + calculateExpiration(): DateTime
-  + isValidAt(date: DateTime): Boolean
+  + accredit(accreditedAt: DateTime) void
+  + voidPayment(reason: String, voidedAt: DateTime) void
+  + calculateExpiration() DateTime
+  + isValidAt(date: DateTime) Boolean
 }
 
 class MedicalCertificate {
@@ -109,9 +110,9 @@ class MedicalCertificate {
   - uploadedAt: DateTime
   - reviewedAt: DateTime [0..1]
   - reviewComment: String [0..1]
-  + approve(reviewedAt: DateTime): void
-  + reject(comment: String, reviewedAt: DateTime): void
-  + isApproved(): Boolean
+  + approve(reviewedAt: DateTime) void
+  + reject(comment: String, reviewedAt: DateTime) void
+  + isApproved() Boolean
 }
 
 MemberProfile "1" -- "0..*" Payment : has
@@ -135,7 +136,7 @@ class User {
   - id: UUID
   - role: UserRole
   - status: UserStatus
-  + canAuthenticate(): Boolean
+  + canAuthenticate() Boolean
 }
 
 class Branch {
@@ -149,8 +150,8 @@ class Branch {
   - latitude: Decimal [0..1]
   - longitude: Decimal [0..1]
   - isActive: Boolean
-  + activate(): void
-  + deactivate(): void
+  + activate() void
+  + deactivate() void
 }
 
 class AccessPoint {
@@ -158,9 +159,9 @@ class AccessPoint {
   - name: String
   - qrToken: String
   - isActive: Boolean
-  + matchesQrToken(token: String): Boolean
-  + activate(): void
-  + deactivate(): void
+  + matchesQrToken(token: String) Boolean
+  + activate() void
+  + deactivate() void
 }
 
 class AccessLog {
@@ -178,7 +179,7 @@ Branch "0..1" -- "0..*" AccessLog : receives
 AccessPoint "0..1" -- "0..*" AccessLog : records
 ```
 
-`Branch` y `AccessPoint` son opcionales en un registro cuando el QR es inexistente o fue alterado. La validación completa del ingreso coordina usuario, cuota, apto, sede y punto de acceso; se implementará en la capa de servicios y no como una entidad adicional.
+`Branch` y `AccessPoint` son opcionales en un registro cuando el QR es inexistente o fue alterado. La validaciÃ³n completa del ingreso coordina usuario, cuota, apto, sede y punto de acceso; se implementarÃ¡ en la capa de servicios y no como una entidad adicional.
 
 ## 4. Sedes, cronogramas y entrenadores
 
@@ -190,32 +191,32 @@ class TrainerProfile {
   - id: UUID
   - specialty: String
   - description: String
-  + updateProfessionalProfile(specialty: String, description: String): void
+  + updateProfessionalProfile(specialty: String, description: String) void
 }
 
 class Branch {
   - id: UUID
   - name: String
   - isActive: Boolean
-  + activate(): void
-  + deactivate(): void
+  + activate() void
+  + deactivate() void
 }
 
 class WeeklySchedule {
   - id: UUID
   - weekStartsOn: Date
   - createdAt: DateTime
-  + copyToWeek(weekStartsOn: Date): WeeklySchedule
+  + copyToWeek(weekStartsOn: Date) WeeklySchedule
 }
 
 class ScheduledClass {
   - id: UUID
   - activity: String
   - startsAt: DateTime
-  + reschedule(startsAt: DateTime): void
-  + assignTrainer(trainer: TrainerProfile): void
-  + removeTrainer(): void
-  + changeBranch(branch: Branch): void
+  + reschedule(startsAt: DateTime) void
+  + assignTrainer(trainer: TrainerProfile) void
+  + removeTrainer() void
+  + changeBranch(branch: Branch) void
 }
 
 TrainerProfile "0..*" -- "0..*" Branch : worksAt
@@ -246,9 +247,9 @@ class Event {
   - location: String
   - imageUrl: String [0..1]
   - status: EventStatus
-  + publish(): void
-  + cancel(): void
-  + isFinishedAt(date: DateTime): Boolean
+  + publish() void
+  + cancel() void
+  + isFinishedAt(date: DateTime) Boolean
 }
 
 class NewsPost {
@@ -259,9 +260,9 @@ class NewsPost {
   - audience: PublicationAudience
   - status: PublicationStatus
   - publishedAt: DateTime [0..1]
-  + publish(publishedAt: DateTime): void
-  + updateContent(title: String, content: String): void
-  + deactivate(): void
+  + publish(publishedAt: DateTime) void
+  + updateContent(title: String, content: String) void
+  + deactivate() void
 }
 
 class Notification {
@@ -271,8 +272,8 @@ class Notification {
   - type: NotificationType
   - createdAt: DateTime
   - readAt: DateTime [0..1]
-  + markAsRead(readAt: DateTime): void
-  + isRead(): Boolean
+  + markAsRead(readAt: DateTime) void
+  + isRead() Boolean
 }
 
 User "1" -- "0..*" Event : createdBy
@@ -280,7 +281,7 @@ User "1" -- "0..*" NewsPost : createdBy
 User "1" -- "0..*" Notification : receives
 ```
 
-Los eventos utilizan una ubicación libre. Las notificaciones se generan desde servicios de aplicación ante aumentos de cuota, vencimientos, revisiones de aptos, cambios de clases y cancelaciones de eventos.
+Los eventos utilizan una ubicaciÃ³n libre. Las notificaciones se generan desde servicios de aplicaciÃ³n ante aumentos de cuota, vencimientos, revisiones de aptos, cambios de clases y cancelaciones de eventos.
 
 ## Enumeraciones
 
@@ -301,19 +302,19 @@ Los eventos utilizan una ubicación libre. Las notificaciones se generan desde s
 
 ## Reglas de modelado
 
-- Los atributos son privados y solo se muestran operaciones públicas relevantes; no se incluyen getters ni setters triviales.
-- `UserAuditLog` y `AccessLog` no tienen métodos porque son registros históricos inmutables, creados por los servicios y utilizados para consulta.
-- Los servicios, controladores, repositorios y DTO se documentarán en el diseño de capas; no son entidades del dominio.
-- `MemberProfile`, `TrainerProfile`, `AccessPoint` y `ScheduledClass` utilizan composición porque dependen conceptualmente de su contenedor.
+- Los atributos son privados y solo se muestran operaciones pÃºblicas relevantes; no se incluyen getters ni setters triviales.
+- `UserAuditLog` y `AccessLog` no tienen mÃ©todos porque son registros histÃ³ricos inmutables, creados por los servicios y utilizados para consulta.
+- Los servicios, controladores, repositorios y DTO se documentarÃ¡n en el diseÃ±o de capas; no son entidades del dominio.
+- `MemberProfile`, `TrainerProfile`, `AccessPoint` y `ScheduledClass` utilizan composiciÃ³n porque dependen conceptualmente de su contenedor.
 - Pagos, aptos, registros, sedes, entrenadores y publicaciones conservan identidad e historial propios y utilizan asociaciones normales.
-- El precio de la cuota es único para todos los socios y conserva su historial.
-- Cada pago acreditado genera 30 días de vigencia sin acumular días anteriores.
-- Al anular un pago, la vigencia y el período inicial se recalculan utilizando los pagos acreditados que permanezcan válidos.
-- El período inicial para ingresar sin apto aprobado dura 20 días desde el primer pago acreditado válido.
-- Un apto aprobado permanece válido sin fecha de vencimiento.
-- El QR identifica un punto de acceso fijo y el usuario se identifica mediante su sesión.
-- Desactivar una entidad no elimina sus relaciones ni registros históricos.
+- El precio de la cuota es Ãºnico para todos los socios y conserva su historial.
+- Cada pago acreditado genera 30 dÃ­as de vigencia sin acumular dÃ­as anteriores.
+- Al anular un pago, la vigencia y el perÃ­odo inicial se recalculan utilizando los pagos acreditados que permanezcan vÃ¡lidos.
+- El perÃ­odo inicial para ingresar sin apto aprobado dura 20 dÃ­as desde el primer pago acreditado vÃ¡lido.
+- Un apto aprobado permanece vÃ¡lido sin fecha de vencimiento.
+- El QR identifica un punto de acceso fijo y el usuario se identifica mediante su sesiÃ³n.
+- Desactivar una entidad no elimina sus relaciones ni registros histÃ³ricos.
 
-## Decisión pendiente
+## DecisiÃ³n pendiente
 
-M-Team debe confirmar los medios de pago aceptados. Hasta entonces, `Payment.method` permanece como `String` y no se agrega una enumeración con valores no aprobados.
+M-Team debe confirmar los medios de pago aceptados. Hasta entonces, `Payment.method` permanece como `String` y no se agrega una enumeraciÃ³n con valores no aprobados.
