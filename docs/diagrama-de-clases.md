@@ -1,10 +1,10 @@
 # Diagrama de clases de M-Team
 
-Este documento representa las clases del dominio definidas por el alcance de M-Team. Utiliza UML con atributos privados, operaciones públicas relevantes, relaciones tipadas y multiplicidades en ambos extremos.
+El modelo se presenta mediante vistas temáticas para mantenerlo legible. Todas las vistas representan el mismo dominio y las clases repetidas son el mismo concepto, mostrado solamente con los miembros relevantes para cada módulo.
 
-No incluye claves foráneas, tablas, controladores, DTO ni detalles de Prisma. Esos elementos pertenecen al modelo relacional y al diseño de capas. Los nombres del código se expresan en inglés, de acuerdo con las convenciones del proyecto.
+Los atributos son privados, las operaciones públicas relevantes comienzan con un verbo y todas las asociaciones indican multiplicidad en ambos extremos. No se muestran claves foráneas porque pertenecen al modelo relacional.
 
-## Usuarios, cuotas, aptos y accesos
+## 1. Usuarios y perfiles
 
 ```mermaid
 classDiagram
@@ -19,7 +19,7 @@ class User {
   - email: String
   - phone: String
   - passwordHash: String
-  - photoUrl: String
+  - photoUrl: String [0..1]
   - role: UserRole
   - status: UserStatus
   - hasTemporaryPassword: Boolean
@@ -47,25 +47,55 @@ class TrainerProfile {
   + updateProfessionalProfile(specialty: String, description: String): void
 }
 
+class UserAuditLog {
+  <<immutable>>
+  - id: UUID
+  - action: UserAuditAction
+  - reason: String [0..1]
+  - occurredAt: DateTime
+}
+
+User "1" *-- "0..1" MemberProfile : owns
+User "1" *-- "0..1" TrainerProfile : owns
+User "1" -- "0..*" UserAuditLog : auditedUser
+User "1" -- "0..*" UserAuditLog : performedBy
+note for User "{xor: MemberProfile, TrainerProfile}\nMEMBER requires MemberProfile\nTRAINER requires TrainerProfile\nADMIN requires neither profile"
+```
+
+## 2. Cuota, pagos y aptos médicos
+
+```mermaid
+classDiagram
+direction LR
+
+class User {
+  - id: UUID
+  - role: UserRole
+}
+
+class MemberProfile {
+  - id: UUID
+}
+
 class MembershipPrice {
+  <<immutable>>
   - id: UUID
   - amount: Decimal
   - effectiveFrom: DateTime
   - createdAt: DateTime
-  + isEffectiveAt(date: DateTime): Boolean
 }
 
 class Payment {
   - id: UUID
   - amount: Decimal
   - method: String
-  - receiptNumber: String
+  - receiptNumber: String [0..1]
   - status: PaymentStatus
   - createdAt: DateTime
   - accreditedAt: DateTime
   - expiresAt: DateTime
-  - voidedAt: DateTime
-  - voidReason: String
+  - voidedAt: DateTime [0..1]
+  - voidReason: String [0..1]
   + accredit(accreditedAt: DateTime): void
   + voidPayment(reason: String, voidedAt: DateTime): void
   + calculateExpiration(): DateTime
@@ -77,11 +107,35 @@ class MedicalCertificate {
   - fileUrl: String
   - status: MedicalCertificateStatus
   - uploadedAt: DateTime
-  - reviewedAt: DateTime
-  - reviewComment: String
+  - reviewedAt: DateTime [0..1]
+  - reviewComment: String [0..1]
   + approve(reviewedAt: DateTime): void
   + reject(comment: String, reviewedAt: DateTime): void
   + isApproved(): Boolean
+}
+
+MemberProfile "1" -- "0..*" Payment : has
+MemberProfile "1" -- "0..*" MedicalCertificate : submits
+User "1" -- "0..*" MembershipPrice : createdBy
+User "1" -- "0..*" Payment : createdBy
+User "1" -- "0..*" Payment : confirmedBy
+User "0..1" -- "0..*" Payment : voidedBy
+User "0..1" -- "0..*" MedicalCertificate : reviewedBy
+```
+
+El estado de cuota `CURRENT`, `EXPIRING_SOON` o `EXPIRED` se calcula desde los pagos acreditados y no se almacena como atributo.
+
+## 3. Control de acceso
+
+```mermaid
+classDiagram
+direction LR
+
+class User {
+  - id: UUID
+  - role: UserRole
+  - status: UserStatus
+  + canAuthenticate(): Boolean
 }
 
 class Branch {
@@ -92,10 +146,9 @@ class Branch {
   - address: String
   - openingHours: String
   - phone: String
-  - latitude: Decimal
-  - longitude: Decimal
+  - latitude: Decimal [0..1]
+  - longitude: Decimal [0..1]
   - isActive: Boolean
-  + updateInformation(): void
   + activate(): void
   + deactivate(): void
 }
@@ -111,64 +164,27 @@ class AccessPoint {
 }
 
 class AccessLog {
+  <<immutable>>
   - id: UUID
   - roleAtAttempt: UserRole
   - result: AccessResult
-  - denialReason: AccessDenialReason
+  - denialReason: AccessDenialReason [0..1]
   - attemptedAt: DateTime
 }
 
-class UserAuditLog {
-  - id: UUID
-  - action: UserAuditAction
-  - reason: String
-  - occurredAt: DateTime
-}
-
-class MembershipService {
-  + calculateStatus(member: MemberProfile, at: DateTime): MembershipStatus
-  + calculateDaysRemaining(member: MemberProfile, at: DateTime): Integer
-  + calculateGracePeriodEnd(member: MemberProfile): DateTime
-}
-
-class AccessService {
-  + validateAccess(user: User, accessPoint: AccessPoint, attemptedAt: DateTime): AccessLog
-}
-
-User "1" *-- "0..1" MemberProfile : owns
-User "1" *-- "0..1" TrainerProfile : owns
-MemberProfile "1" -- "0..*" Payment : has
-MemberProfile "1" -- "0..*" MedicalCertificate : submits
 User "1" -- "0..*" AccessLog : attempts
 Branch "1" *-- "0..*" AccessPoint : contains
 Branch "0..1" -- "0..*" AccessLog : receives
 AccessPoint "0..1" -- "0..*" AccessLog : records
-User "1" -- "0..*" UserAuditLog : auditedUser
-User "1" -- "0..*" UserAuditLog : performedBy
-User "1" -- "0..*" MembershipPrice : createdBy
-User "1" -- "0..*" Payment : createdBy
-User "0..1" -- "0..*" Payment : confirmedBy
-User "0..1" -- "0..*" Payment : voidedBy
-User "0..1" -- "0..*" MedicalCertificate : reviewedBy
-MembershipService ..> MemberProfile : uses
-MembershipService ..> Payment : uses
-AccessService ..> User : uses
-AccessService ..> AccessPoint : uses
-AccessService ..> MembershipService : uses
-AccessService ..> MedicalCertificate : uses
-AccessService ..> AccessLog : creates
 ```
 
-## Sedes, cronogramas y entrenadores
+`Branch` y `AccessPoint` son opcionales en un registro cuando el QR es inexistente o fue alterado. La validación completa del ingreso coordina usuario, cuota, apto, sede y punto de acceso; se implementará en la capa de servicios y no como una entidad adicional.
+
+## 4. Sedes, cronogramas y entrenadores
 
 ```mermaid
 classDiagram
 direction LR
-
-class User {
-  - id: UUID
-  - status: UserStatus
-}
 
 class TrainerProfile {
   - id: UUID
@@ -202,24 +218,16 @@ class ScheduledClass {
   + changeBranch(branch: Branch): void
 }
 
-class ScheduleService {
-  + createClass(schedule: WeeklySchedule, branch: Branch, trainer: TrainerProfile): ScheduledClass
-  + copyPreviousWeek(previous: WeeklySchedule, weekStartsOn: Date): WeeklySchedule
-}
-
-User "1" *-- "0..1" TrainerProfile : owns
 TrainerProfile "0..*" -- "0..*" Branch : worksAt
 WeeklySchedule "1" *-- "0..*" ScheduledClass : contains
 WeeklySchedule "0..1" -- "0..*" WeeklySchedule : copiedFrom
 Branch "1" -- "0..*" ScheduledClass : hosts
 TrainerProfile "0..1" -- "0..*" ScheduledClass : teaches
-ScheduleService ..> WeeklySchedule : uses
-ScheduleService ..> ScheduledClass : creates
-ScheduleService ..> Branch : validates
-ScheduleService ..> TrainerProfile : validates
 ```
 
-## Eventos, novedades y notificaciones
+Las clases son informativas: no incluyen reservas, cupos, listas de espera ni control de asistencia.
+
+## 5. Eventos, novedades y notificaciones
 
 ```mermaid
 classDiagram
@@ -236,21 +244,21 @@ class Event {
   - description: String
   - startsAt: DateTime
   - location: String
-  - imageUrl: String
+  - imageUrl: String [0..1]
   - status: EventStatus
   + publish(): void
   + cancel(): void
-  + isFinished(at: DateTime): Boolean
+  + isFinishedAt(date: DateTime): Boolean
 }
 
 class NewsPost {
   - id: UUID
   - title: String
   - content: String
-  - imageUrl: String
+  - imageUrl: String [0..1]
   - audience: PublicationAudience
   - status: PublicationStatus
-  - publishedAt: DateTime
+  - publishedAt: DateTime [0..1]
   + publish(publishedAt: DateTime): void
   + updateContent(title: String, content: String): void
   + deactivate(): void
@@ -262,142 +270,50 @@ class Notification {
   - message: String
   - type: NotificationType
   - createdAt: DateTime
-  - readAt: DateTime
+  - readAt: DateTime [0..1]
   + markAsRead(readAt: DateTime): void
   + isRead(): Boolean
-}
-
-class NotificationService {
-  + notifyMembershipPriceChange(price: MembershipPrice): void
-  + notifyMedicalReview(certificate: MedicalCertificate): void
-  + notifyClassChange(scheduledClass: ScheduledClass): void
-  + notifyEventCancellation(event: Event): void
 }
 
 User "1" -- "0..*" Event : createdBy
 User "1" -- "0..*" NewsPost : createdBy
 User "1" -- "0..*" Notification : receives
-NotificationService ..> User : selectsRecipients
-NotificationService ..> Notification : creates
-NotificationService ..> MembershipPrice : uses
-NotificationService ..> MedicalCertificate : uses
-NotificationService ..> ScheduledClass : uses
-NotificationService ..> Event : uses
 ```
 
-## Enumeraciones del dominio
+Los eventos utilizan una ubicación libre. Las notificaciones se generan desde servicios de aplicación ante aumentos de cuota, vencimientos, revisiones de aptos, cambios de clases y cancelaciones de eventos.
 
-```mermaid
-classDiagram
-class UserRole {
-  <<enumeration>>
-  MEMBER
-  TRAINER
-  ADMIN
-}
-class UserStatus {
-  <<enumeration>>
-  ACTIVE
-  INACTIVE
-}
-class MembershipStatus {
-  <<enumeration>>
-  CURRENT
-  EXPIRING_SOON
-  EXPIRED
-}
-class PaymentStatus {
-  <<enumeration>>
-  ACCREDITED
-  VOIDED
-}
-class MedicalCertificateStatus {
-  <<enumeration>>
-  PENDING
-  APPROVED
-  REJECTED
-}
-class AccessResult {
-  <<enumeration>>
-  ALLOWED
-  DENIED
-}
-class AccessDenialReason {
-  <<enumeration>>
-  INVALID_QR
-  INACTIVE_USER
-  INACTIVE_BRANCH
-  INACTIVE_ACCESS_POINT
-  EXPIRED_MEMBERSHIP
-  MEDICAL_CERTIFICATE_REQUIRED
-}
-class UserAuditAction {
-  <<enumeration>>
-  CREATED
-  UPDATED
-  ACTIVATED
-  DEACTIVATED
-  PASSWORD_RESET
-}
-class EventStatus {
-  <<enumeration>>
-  DRAFT
-  PUBLISHED
-  CANCELLED
-}
-class PublicationAudience {
-  <<enumeration>>
-  ALL
-  MEMBERS
-  TRAINERS
-}
-class PublicationStatus {
-  <<enumeration>>
-  DRAFT
-  PUBLISHED
-  INACTIVE
-}
-class NotificationType {
-  <<enumeration>>
-  MEMBERSHIP_PRICE_CHANGED
-  MEMBERSHIP_EXPIRING
-  MEMBERSHIP_EXPIRED
-  MEDICAL_CERTIFICATE_REVIEWED
-  CLASS_CHANGED
-  EVENT_CANCELLED
-  GENERAL
-}
-```
+## Enumeraciones
 
-## Decisiones de modelado
-
-- Los atributos son privados y las modificaciones se realizan mediante operaciones públicas relevantes.
-- Los identificadores de otras clases no se duplican como atributos: las asociaciones representan esas referencias.
-- `MemberProfile`, `TrainerProfile`, `AccessPoint` y `ScheduledClass` se modelan mediante composición porque no tienen sentido de dominio sin su objeto contenedor.
-- Pagos, aptos, registros, sedes, entrenadores y contenido mantienen identidad e historial propios; por eso utilizan asociaciones normales.
-- `MembershipService`, `AccessService`, `ScheduleService` y `NotificationService` coordinan reglas que involucran varias entidades y no almacenan datos propios.
-- `MembershipStatus` se calcula a partir de pagos acreditados; no se guarda como un atributo persistente.
-- Un pago genera 30 días de vigencia sin acumular días anteriores. Al anularlo, se recalcula desde los pagos acreditados que continúen válidos.
-- El período inicial de 20 días se calcula desde el primer pago acreditado que permanezca válido.
-- Un apto aprobado no tiene vencimiento.
-- El QR identifica un punto de acceso fijo; el usuario se identifica mediante su sesión.
-- Cuando el QR no puede identificarse, el registro de acceso no se asocia con una sede ni con un punto de acceso.
-- Las clases son informativas y no modelan reservas, cupos, listas de espera ni asistencia.
-- Los eventos utilizan una ubicación libre y no se asocian obligatoriamente con una sede.
-
-## Verificación de la consigna
-
-| Criterio | Cumplimiento |
+| Enum | Valores |
 |---|---|
-| Responsabilidad única por clase | Las entidades conservan su propio estado y los servicios coordinan reglas entre entidades. |
-| Clases e interfaces en PascalCase | Todos los nombres de clases y enumeraciones usan PascalCase. |
-| Métodos en camelCase y con verbo | Todas las operaciones comienzan con un verbo y expresan una acción concreta. |
-| Atributos privados en camelCase | Todos los atributos usan `-` y camelCase. |
-| Tipos de datos indicados | Cada atributo, parámetro y retorno declara su tipo. |
-| Relaciones correctas | Se distinguen composición, asociación y dependencia. |
-| Multiplicidades completas | Cada asociación indica multiplicidad en ambos extremos. |
-| Entidades no duplicadas | Las clases repetidas entre bloques son referencias visuales al mismo concepto, no entidades diferentes. |
+| `UserRole` | `MEMBER`, `TRAINER`, `ADMIN` |
+| `UserStatus` | `ACTIVE`, `INACTIVE` |
+| `MembershipStatus` | `CURRENT`, `EXPIRING_SOON`, `EXPIRED` |
+| `PaymentStatus` | `ACCREDITED`, `VOIDED` |
+| `MedicalCertificateStatus` | `PENDING`, `APPROVED`, `REJECTED` |
+| `AccessResult` | `ALLOWED`, `DENIED` |
+| `AccessDenialReason` | `INVALID_QR`, `INACTIVE_USER`, `INACTIVE_BRANCH`, `INACTIVE_ACCESS_POINT`, `EXPIRED_MEMBERSHIP`, `MEDICAL_CERTIFICATE_REQUIRED` |
+| `UserAuditAction` | `CREATED`, `UPDATED`, `ACTIVATED`, `DEACTIVATED`, `PASSWORD_RESET` |
+| `EventStatus` | `DRAFT`, `PUBLISHED`, `CANCELLED` |
+| `PublicationAudience` | `ALL`, `MEMBERS`, `TRAINERS` |
+| `PublicationStatus` | `DRAFT`, `PUBLISHED`, `INACTIVE` |
+| `NotificationType` | `MEMBERSHIP_PRICE_CHANGED`, `MEMBERSHIP_EXPIRING`, `MEMBERSHIP_EXPIRED`, `MEDICAL_CERTIFICATE_REVIEWED`, `CLASS_CHANGED`, `EVENT_CANCELLED`, `GENERAL` |
+
+## Reglas de modelado
+
+- Los atributos son privados y solo se muestran operaciones públicas relevantes; no se incluyen getters ni setters triviales.
+- `UserAuditLog` y `AccessLog` no tienen métodos porque son registros históricos inmutables, creados por los servicios y utilizados para consulta.
+- Los servicios, controladores, repositorios y DTO se documentarán en el diseño de capas; no son entidades del dominio.
+- `MemberProfile`, `TrainerProfile`, `AccessPoint` y `ScheduledClass` utilizan composición porque dependen conceptualmente de su contenedor.
+- Pagos, aptos, registros, sedes, entrenadores y publicaciones conservan identidad e historial propios y utilizan asociaciones normales.
+- El precio de la cuota es único para todos los socios y conserva su historial.
+- Cada pago acreditado genera 30 días de vigencia sin acumular días anteriores.
+- Al anular un pago, la vigencia y el período inicial se recalculan utilizando los pagos acreditados que permanezcan válidos.
+- El período inicial para ingresar sin apto aprobado dura 20 días desde el primer pago acreditado válido.
+- Un apto aprobado permanece válido sin fecha de vencimiento.
+- El QR identifica un punto de acceso fijo y el usuario se identifica mediante su sesión.
+- Desactivar una entidad no elimina sus relaciones ni registros históricos.
 
 ## Decisión pendiente
 
-M-Team debe confirmar los medios de pago aceptados. Hasta entonces, `Payment.method` permanece como `String` y no se define una enumeración que agregue valores no aprobados por el alcance.
+M-Team debe confirmar los medios de pago aceptados. Hasta entonces, `Payment.method` permanece como `String` y no se agrega una enumeración con valores no aprobados.
