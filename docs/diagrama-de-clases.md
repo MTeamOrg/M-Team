@@ -1,212 +1,291 @@
 # Diagrama de clases de M-Team
 
-Esta primera versión representa los conceptos del negocio definidos en el alcance. No incluye controladores, servicios, repositorios, JWT ni componentes de la interfaz.
+Este documento representa las clases del dominio definidas por el alcance de M-Team. Utiliza UML con atributos privados, operaciones públicas relevantes, relaciones tipadas y multiplicidades en ambos extremos.
 
-## Núcleo operativo
+No incluye claves foráneas, tablas, controladores, DTO ni detalles de Prisma. Esos elementos pertenecen al modelo relacional y al diseño de capas. Los nombres del código se expresan en inglés, de acuerdo con las convenciones del proyecto.
+
+## Usuarios, cuotas, aptos y accesos
 
 ```mermaid
 classDiagram
 direction LR
 
 class User {
-  +UUID id
-  +string firstName
-  +string lastName
-  +string documentNumber
-  +date birthDate
-  +string email
-  +string phone
-  +string passwordHash
-  +string photoUrl
-  +UserRole role
-  +UserStatus status
-  +boolean mustChangePassword
-  +datetime createdAt
-  +datetime updatedAt
+  - id: UUID
+  - firstName: String
+  - lastName: String
+  - documentNumber: String
+  - birthDate: Date
+  - email: String
+  - phone: String
+  - passwordHash: String
+  - photoUrl: String
+  - role: UserRole
+  - status: UserStatus
+  - hasTemporaryPassword: Boolean
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  + updateContact(email: String, phone: String): void
+  + changePassword(passwordHash: String): void
+  + assignTemporaryPassword(passwordHash: String): void
+  + activate(): void
+  + deactivate(): void
+  + canAuthenticate(): Boolean
 }
 
 class MemberProfile {
-  +UUID id
-  +UUID userId
-  +string emergencyContactName
-  +string emergencyContactPhone
+  - id: UUID
+  - emergencyContactName: String
+  - emergencyContactPhone: String
+  + updateEmergencyContact(name: String, phone: String): void
 }
 
 class TrainerProfile {
-  +UUID id
-  +UUID userId
-  +string specialty
-  +string description
+  - id: UUID
+  - specialty: String
+  - description: String
+  + updateProfessionalProfile(specialty: String, description: String): void
 }
 
 class MembershipPrice {
-  +UUID id
-  +decimal amount
-  +datetime effectiveFrom
-  +UUID createdById
-  +datetime createdAt
+  - id: UUID
+  - amount: Decimal
+  - effectiveFrom: DateTime
+  - createdAt: DateTime
+  + isEffectiveAt(date: DateTime): Boolean
 }
 
 class Payment {
-  +UUID id
-  +UUID memberId
-  +decimal amount
-  +string method
-  +string receiptNumber
-  +PaymentStatus status
-  +UUID createdById
-  +datetime createdAt
-  +UUID confirmedById
-  +datetime accreditedAt
-  +datetime expiresAt
-  +UUID voidedById
-  +datetime voidedAt
-  +string voidReason
+  - id: UUID
+  - amount: Decimal
+  - method: String
+  - receiptNumber: String
+  - status: PaymentStatus
+  - createdAt: DateTime
+  - accreditedAt: DateTime
+  - expiresAt: DateTime
+  - voidedAt: DateTime
+  - voidReason: String
+  + accredit(accreditedAt: DateTime): void
+  + voidPayment(reason: String, voidedAt: DateTime): void
+  + calculateExpiration(): DateTime
+  + isValidAt(date: DateTime): Boolean
 }
 
 class MedicalCertificate {
-  +UUID id
-  +UUID memberId
-  +string fileUrl
-  +MedicalCertificateStatus status
-  +datetime uploadedAt
-  +UUID reviewedById
-  +datetime reviewedAt
-  +string reviewComment
+  - id: UUID
+  - fileUrl: String
+  - status: MedicalCertificateStatus
+  - uploadedAt: DateTime
+  - reviewedAt: DateTime
+  - reviewComment: String
+  + approve(reviewedAt: DateTime): void
+  + reject(comment: String, reviewedAt: DateTime): void
+  + isApproved(): Boolean
 }
 
 class Branch {
-  +UUID id
-  +string name
-  +string description
-  +string imageUrl
-  +string address
-  +string openingHours
-  +string phone
-  +decimal latitude [optional]
-  +decimal longitude [optional]
-  +boolean isActive
+  - id: UUID
+  - name: String
+  - description: String
+  - imageUrl: String
+  - address: String
+  - openingHours: String
+  - phone: String
+  - latitude: Decimal
+  - longitude: Decimal
+  - isActive: Boolean
+  + updateInformation(): void
+  + activate(): void
+  + deactivate(): void
 }
 
 class AccessPoint {
-  +UUID id
-  +UUID branchId
-  +string name
-  +string qrToken
-  +boolean isActive
+  - id: UUID
+  - name: String
+  - qrToken: String
+  - isActive: Boolean
+  + matchesQrToken(token: String): Boolean
+  + activate(): void
+  + deactivate(): void
 }
 
 class AccessLog {
-  +UUID id
-  +UUID userId
-  +UserRole roleAtAttempt
-  +UUID branchId [optional]
-  +UUID accessPointId [optional]
-  +AccessResult result
-  +AccessDenialReason denialReason
-  +datetime attemptedAt
-}
-
-class WeeklySchedule {
-  +UUID id
-  +date weekStartsOn
-  +UUID copiedFromId
-  +datetime createdAt
-}
-
-class ScheduledClass {
-  +UUID id
-  +UUID scheduleId
-  +UUID branchId
-  +UUID trainerId
-  +string activity
-  +datetime startsAt
-}
-
-class TrainerBranch {
-  +UUID trainerId
-  +UUID branchId
+  - id: UUID
+  - roleAtAttempt: UserRole
+  - result: AccessResult
+  - denialReason: AccessDenialReason
+  - attemptedAt: DateTime
 }
 
 class UserAuditLog {
-  +UUID id
-  +UUID userId
-  +UUID performedById
-  +UserAuditAction action
-  +string reason
-  +datetime occurredAt
+  - id: UUID
+  - action: UserAuditAction
+  - reason: String
+  - occurredAt: DateTime
 }
 
-User "1" *-- "0..1" MemberProfile : has
-User "1" *-- "0..1" TrainerProfile : has
-MemberProfile "1" --> "0..*" Payment : owns
-MemberProfile "1" --> "0..*" MedicalCertificate : uploads
-User "1" --> "0..*" AccessLog : attempts
+class MembershipService {
+  + calculateStatus(member: MemberProfile, at: DateTime): MembershipStatus
+  + calculateDaysRemaining(member: MemberProfile, at: DateTime): Integer
+  + calculateGracePeriodEnd(member: MemberProfile): DateTime
+}
+
+class AccessService {
+  + validateAccess(user: User, accessPoint: AccessPoint, attemptedAt: DateTime): AccessLog
+}
+
+User "1" *-- "0..1" MemberProfile : owns
+User "1" *-- "0..1" TrainerProfile : owns
+MemberProfile "1" -- "0..*" Payment : has
+MemberProfile "1" -- "0..*" MedicalCertificate : submits
+User "1" -- "0..*" AccessLog : attempts
 Branch "1" *-- "0..*" AccessPoint : contains
-Branch "0..1" --> "0..*" AccessLog : receives
-AccessPoint "0..1" --> "0..*" AccessLog : records
-WeeklySchedule "1" *-- "0..*" ScheduledClass : contains
-WeeklySchedule "0..1" --> "0..*" WeeklySchedule : copied into
-Branch "1" --> "0..*" ScheduledClass : hosts
-TrainerProfile "0..1" --> "0..*" ScheduledClass : teaches
-TrainerProfile "1" --> "0..*" TrainerBranch : works at
-Branch "1" --> "0..*" TrainerBranch : has trainers
-User "1" --> "0..*" UserAuditLog : is audited
-User "1" --> "0..*" UserAuditLog : performs
-User "1" --> "0..*" MembershipPrice : creates
-User "1" --> "0..*" Payment : creates confirms or voids
-User "1" --> "0..*" MedicalCertificate : reviews
+Branch "0..1" -- "0..*" AccessLog : receives
+AccessPoint "0..1" -- "0..*" AccessLog : records
+User "1" -- "0..*" UserAuditLog : auditedUser
+User "1" -- "0..*" UserAuditLog : performedBy
+User "1" -- "0..*" MembershipPrice : createdBy
+User "1" -- "0..*" Payment : createdBy
+User "0..1" -- "0..*" Payment : confirmedBy
+User "0..1" -- "0..*" Payment : voidedBy
+User "0..1" -- "0..*" MedicalCertificate : reviewedBy
+MembershipService ..> MemberProfile : uses
+MembershipService ..> Payment : uses
+AccessService ..> User : uses
+AccessService ..> AccessPoint : uses
+AccessService ..> MembershipService : uses
+AccessService ..> MedicalCertificate : uses
+AccessService ..> AccessLog : creates
 ```
 
-## Comunicación y contenido
+## Sedes, cronogramas y entrenadores
 
 ```mermaid
 classDiagram
 direction LR
 
 class User {
-  +UUID id
-  +UserRole role
+  - id: UUID
+  - status: UserStatus
+}
+
+class TrainerProfile {
+  - id: UUID
+  - specialty: String
+  - description: String
+  + updateProfessionalProfile(specialty: String, description: String): void
+}
+
+class Branch {
+  - id: UUID
+  - name: String
+  - isActive: Boolean
+  + activate(): void
+  + deactivate(): void
+}
+
+class WeeklySchedule {
+  - id: UUID
+  - weekStartsOn: Date
+  - createdAt: DateTime
+  + copyToWeek(weekStartsOn: Date): WeeklySchedule
+}
+
+class ScheduledClass {
+  - id: UUID
+  - activity: String
+  - startsAt: DateTime
+  + reschedule(startsAt: DateTime): void
+  + assignTrainer(trainer: TrainerProfile): void
+  + removeTrainer(): void
+  + changeBranch(branch: Branch): void
+}
+
+class ScheduleService {
+  + createClass(schedule: WeeklySchedule, branch: Branch, trainer: TrainerProfile): ScheduledClass
+  + copyPreviousWeek(previous: WeeklySchedule, weekStartsOn: Date): WeeklySchedule
+}
+
+User "1" *-- "0..1" TrainerProfile : owns
+TrainerProfile "0..*" -- "0..*" Branch : worksAt
+WeeklySchedule "1" *-- "0..*" ScheduledClass : contains
+WeeklySchedule "0..1" -- "0..*" WeeklySchedule : copiedFrom
+Branch "1" -- "0..*" ScheduledClass : hosts
+TrainerProfile "0..1" -- "0..*" ScheduledClass : teaches
+ScheduleService ..> WeeklySchedule : uses
+ScheduleService ..> ScheduledClass : creates
+ScheduleService ..> Branch : validates
+ScheduleService ..> TrainerProfile : validates
+```
+
+## Eventos, novedades y notificaciones
+
+```mermaid
+classDiagram
+direction LR
+
+class User {
+  - id: UUID
+  - role: UserRole
 }
 
 class Event {
-  +UUID id
-  +string title
-  +string description
-  +datetime startsAt
-  +string location
-  +string imageUrl
-  +EventStatus status
-  +UUID createdById
+  - id: UUID
+  - title: String
+  - description: String
+  - startsAt: DateTime
+  - location: String
+  - imageUrl: String
+  - status: EventStatus
+  + publish(): void
+  + cancel(): void
+  + isFinished(at: DateTime): Boolean
 }
 
 class NewsPost {
-  +UUID id
-  +string title
-  +string content
-  +string imageUrl
-  +PublicationAudience audience
-  +PublicationStatus status
-  +datetime publishedAt
-  +UUID createdById
+  - id: UUID
+  - title: String
+  - content: String
+  - imageUrl: String
+  - audience: PublicationAudience
+  - status: PublicationStatus
+  - publishedAt: DateTime
+  + publish(publishedAt: DateTime): void
+  + updateContent(title: String, content: String): void
+  + deactivate(): void
 }
 
 class Notification {
-  +UUID id
-  +UUID userId
-  +string title
-  +string message
-  +NotificationType type
-  +datetime createdAt
-  +datetime readAt
+  - id: UUID
+  - title: String
+  - message: String
+  - type: NotificationType
+  - createdAt: DateTime
+  - readAt: DateTime
+  + markAsRead(readAt: DateTime): void
+  + isRead(): Boolean
 }
 
-User "1" --> "0..*" Event : manages
-User "1" --> "0..*" NewsPost : publishes
-User "1" --> "0..*" Notification : receives
+class NotificationService {
+  + notifyMembershipPriceChange(price: MembershipPrice): void
+  + notifyMedicalReview(certificate: MedicalCertificate): void
+  + notifyClassChange(scheduledClass: ScheduledClass): void
+  + notifyEventCancellation(event: Event): void
+}
+
+User "1" -- "0..*" Event : createdBy
+User "1" -- "0..*" NewsPost : createdBy
+User "1" -- "0..*" Notification : receives
+NotificationService ..> User : selectsRecipients
+NotificationService ..> Notification : creates
+NotificationService ..> MembershipPrice : uses
+NotificationService ..> MedicalCertificate : uses
+NotificationService ..> ScheduledClass : uses
+NotificationService ..> Event : uses
 ```
 
-## Estados del dominio
+## Enumeraciones del dominio
 
 ```mermaid
 classDiagram
@@ -220,6 +299,12 @@ class UserStatus {
   <<enumeration>>
   ACTIVE
   INACTIVE
+}
+class MembershipStatus {
+  <<enumeration>>
+  CURRENT
+  EXPIRING_SOON
+  EXPIRED
 }
 class PaymentStatus {
   <<enumeration>>
@@ -284,23 +369,35 @@ class NotificationType {
 }
 ```
 
-## Reglas que no deben modelarse como datos duplicados
+## Decisiones de modelado
 
-- El estado de la cuota se calcula en el backend a partir del último pago acreditado: `CURRENT`, `EXPIRING_SOON` o `EXPIRED`.
-- `expiresAt` se fija en 30 días desde `accreditedAt`; un pago nuevo reemplaza la vigencia anterior y no acumula días.
-- Si se anula un pago, la vigencia se recalcula utilizando el pago acreditado más reciente que continúe válido.
-- Si el pago anulado era el primer pago válido, el período inicial de 20 días se recalcula desde la acreditación válida más antigua que permanezca registrada.
-- Durante los primeros 20 días desde el primer pago acreditado, un socio puede ingresar sin apto aprobado.
-- Un apto aprobado permanece vigente sin fecha de vencimiento.
-- Un entrenador no necesita cuota ni apto médico para ingresar, pero su cuenta debe estar activa.
-- Desactivar entidades conserva sus relaciones e historial.
-- Los estados `UPCOMING` y `FINISHED` de un evento se derivan de la fecha; `CANCELLED` sí se persiste.
-- El usuario se identifica mediante su sesión y escanea el QR fijo de un `AccessPoint`; no existe un QR personal por usuario.
-- Si el QR es inexistente o fue alterado, el intento se registra con motivo `INVALID_QR` y sin sede ni punto de acceso asociados.
-- Las clases son informativas: no incluyen reservas, cupos, listas de espera ni control de asistencia.
+- Los atributos son privados y las modificaciones se realizan mediante operaciones públicas relevantes.
+- Los identificadores de otras clases no se duplican como atributos: las asociaciones representan esas referencias.
+- `MemberProfile`, `TrainerProfile`, `AccessPoint` y `ScheduledClass` se modelan mediante composición porque no tienen sentido de dominio sin su objeto contenedor.
+- Pagos, aptos, registros, sedes, entrenadores y contenido mantienen identidad e historial propios; por eso utilizan asociaciones normales.
+- `MembershipService`, `AccessService`, `ScheduleService` y `NotificationService` coordinan reglas que involucran varias entidades y no almacenan datos propios.
+- `MembershipStatus` se calcula a partir de pagos acreditados; no se guarda como un atributo persistente.
+- Un pago genera 30 días de vigencia sin acumular días anteriores. Al anularlo, se recalcula desde los pagos acreditados que continúen válidos.
+- El período inicial de 20 días se calcula desde el primer pago acreditado que permanezca válido.
+- Un apto aprobado no tiene vencimiento.
+- El QR identifica un punto de acceso fijo; el usuario se identifica mediante su sesión.
+- Cuando el QR no puede identificarse, el registro de acceso no se asocia con una sede ni con un punto de acceso.
+- Las clases son informativas y no modelan reservas, cupos, listas de espera ni asistencia.
+- Los eventos utilizan una ubicación libre y no se asocian obligatoriamente con una sede.
 
-## Decisiones pendientes de validación
+## Verificación de la consigna
 
-1. Confirmar los medios de pago aceptados por M-Team.
+| Criterio | Cumplimiento |
+|---|---|
+| Responsabilidad única por clase | Las entidades conservan su propio estado y los servicios coordinan reglas entre entidades. |
+| Clases e interfaces en PascalCase | Todos los nombres de clases y enumeraciones usan PascalCase. |
+| Métodos en camelCase y con verbo | Todas las operaciones comienzan con un verbo y expresan una acción concreta. |
+| Atributos privados en camelCase | Todos los atributos usan `-` y camelCase. |
+| Tipos de datos indicados | Cada atributo, parámetro y retorno declara su tipo. |
+| Relaciones correctas | Se distinguen composición, asociación y dependencia. |
+| Multiplicidades completas | Cada asociación indica multiplicidad en ambos extremos. |
+| Entidades no duplicadas | Las clases repetidas entre bloques son referencias visuales al mismo concepto, no entidades diferentes. |
 
-Por cumplimiento estricto del alcance, los eventos utilizan una ubicación libre y no se vinculan con una sede. Cada nueva carga de un apto rechazado se conserva en el historial, como establece APM-07. Los administradores utilizan los datos comunes de `User`, ya que el alcance no define atributos adicionales para un perfil administrativo.
+## Decisión pendiente
+
+M-Team debe confirmar los medios de pago aceptados. Hasta entonces, `Payment.method` permanece como `String` y no se define una enumeración que agregue valores no aprobados por el alcance.
