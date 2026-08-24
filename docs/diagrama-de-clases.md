@@ -1,6 +1,6 @@
 # Diagrama de clases de M-Team
 
-Este diagrama representa en una única vista las entidades del dominio definidas en el alcance. Los paquetes agrupan las clases por responsabilidad, pero forman parte del mismo modelo.
+Este diagrama representa en una única vista las entidades del dominio definidas en el alcance.
 
 Los atributos son privados, los métodos públicos comienzan con un verbo y las asociaciones indican multiplicidad en ambos extremos. No se muestran claves foráneas porque pertenecen al modelo relacional.
 
@@ -8,7 +8,6 @@ Los atributos son privados, los métodos públicos comienzan con un verbo y las 
 classDiagram
 direction TB
 
-namespace Identity {
   class User {
     - id: UUID
     - firstName: String
@@ -53,9 +52,7 @@ namespace Identity {
     - reason: String [0..1]
     - occurredAt: DateTime
   }
-}
 
-namespace Membership {
   class MembershipPrice {
     <<immutable>>
     - id: UUID
@@ -92,9 +89,7 @@ namespace Membership {
     + reject(comment: String, reviewedAt: DateTime) void
     + isApproved() Boolean
   }
-}
 
-namespace AccessControl {
   class Branch {
     - id: UUID
     - name: String
@@ -128,9 +123,7 @@ namespace AccessControl {
     - denialReason: AccessDenialReason [0..1]
     - attemptedAt: DateTime
   }
-}
 
-namespace Scheduling {
   class WeeklySchedule {
     - id: UUID
     - weekStartsOn: Date
@@ -147,9 +140,7 @@ namespace Scheduling {
     + removeTrainer() void
     + changeBranch(branch: Branch) void
   }
-}
 
-namespace Communication {
   class Event {
     - id: UUID
     - title: String
@@ -186,7 +177,6 @@ namespace Communication {
     + markAsRead(readAt: DateTime) void
     + isRead() Boolean
   }
-}
 
 User "1" *-- "0..1" MemberProfile : owns
 User "1" *-- "0..1" TrainerProfile : owns
