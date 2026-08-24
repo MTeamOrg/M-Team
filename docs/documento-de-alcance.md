@@ -370,6 +370,6 @@ Esta organización fue elegida por ser sencilla de desarrollar, mantener, probar
 
 El proyecto utilizará TypeScript estricto y nombres descriptivos en inglés. Las variables, funciones y métodos se escribirán en camelCase, mientras que las clases, interfaces, tipos, enumeraciones y componentes de React utilizarán PascalCase. Las constantes globales se definirán en UPPER_SNAKE_CASE. Los componentes de React se almacenarán en archivos PascalCase.tsx, mientras que los demás archivos utilizarán kebab-case.
 
-En la base de datos, las tablas se nombrarán en plural y con snake_case, las columnas seguirán el mismo formato, las claves primarias se llamarán id y las claves foráneas utilizarán la forma `<entidad>_id`.
+En la base de datos, las tablas se nombrarán en singular y con snake_case, las columnas seguirán el mismo formato, las claves primarias se llamarán id y las claves foráneas utilizarán la forma `<entidad>_id`.
 
 La API REST utilizará rutas en minúsculas, en plural y separadas mediante guiones. El backend se organizará en rutas, controladores, servicios, repositorios, middlewares y validadores, siguiendo el flujo Ruta → Controlador → Servicio → Repositorio Prisma → Base de datos. El frontend se dividirá por módulos funcionales. Se evitarán abreviaturas poco claras, código duplicado, valores fijos sin constantes y archivos con múltiples responsabilidades.

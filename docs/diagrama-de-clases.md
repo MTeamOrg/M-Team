@@ -147,7 +147,7 @@ direction TB
     - description: String
     - startsAt: DateTime
     - location: String
-    - imageUrl: String [0..1]
+    - imageUrl: String
     - status: EventStatus
     + publish() void
     + cancel() void

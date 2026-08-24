@@ -1,6 +1,6 @@
 # Matriz de trazabilidad de requisitos y dominio
 
-Esta matriz vincula los requerimientos funcionales del documento de alcance con el modelo definido en [`modelo-de-dominio.md`](./modelo-de-dominio.md). El documento de alcance es la fuente de verdad; las imágenes se utilizan solamente como referencia visual cuando no lo contradicen.
+Esta matriz vincula los requerimientos funcionales del documento de alcance con el modelo definido en [`diagrama-de-clases.md`](./diagrama-de-clases.md). El documento de alcance es la fuente de verdad; las imágenes se utilizan solamente como referencia visual cuando no lo contradicen.
 
 ## Criterio de cobertura
 
