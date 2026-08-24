@@ -20,7 +20,7 @@ direction TB
     - photoUrl: String [0..1]
     - role: UserRole
     - status: UserStatus
-    - hasTemporaryPassword: Boolean
+    - isPasswordChangeRequired: Boolean
     - createdAt: DateTime
     - updatedAt: DateTime
     + updateContact(email: String, phone: String) void
@@ -178,26 +178,26 @@ direction TB
     + isRead() Boolean
   }
 
-User "1" *-- "0..1" MemberProfile : owns
-User "1" *-- "0..1" TrainerProfile : owns
+User "1" -- "0..1" MemberProfile : has
+User "1" -- "0..1" TrainerProfile : has
 User "1" -- "0..*" UserAuditLog : auditedUser
 User "1" -- "0..*" UserAuditLog : performedBy
 
 MemberProfile "1" -- "0..*" Payment : has
 MemberProfile "1" -- "0..*" MedicalCertificate : submits
 User "1" -- "0..*" MembershipPrice : creates
+User "1" -- "0..*" Payment : creates
 User "1" -- "0..*" Payment : confirms
 User "0..1" -- "0..*" Payment : voids
 User "0..1" -- "0..*" MedicalCertificate : reviews
 
-Branch "1" *-- "0..*" AccessPoint : contains
+Branch "1" -- "0..*" AccessPoint : contains
 User "1" -- "0..*" AccessLog : attempts
 Branch "0..1" -- "0..*" AccessLog : receives
 AccessPoint "0..1" -- "0..*" AccessLog : records
 
 TrainerProfile "0..*" -- "0..*" Branch : worksAt
 WeeklySchedule "1" *-- "0..*" ScheduledClass : contains
-WeeklySchedule "0..1" -- "0..*" WeeklySchedule : copiedFrom
 Branch "1" -- "0..*" ScheduledClass : hosts
 TrainerProfile "0..1" -- "0..*" ScheduledClass : teaches
 
@@ -226,16 +226,31 @@ User "1" -- "0..*" Notification : receives
 ## Restricciones y decisiones
 
 - `MemberProfile` y `TrainerProfile` son mutuamente excluyentes. `MEMBER` requiere `MemberProfile`, `TRAINER` requiere `TrainerProfile` y `ADMIN` no requiere ninguno.
-- `MembershipStatus` se calcula desde los pagos acreditados y no se almacena como atributo.
+- `MembershipStatus` es un valor derivado que se calcula desde los pagos acreditados y no pertenece al estado persistente de ninguna entidad.
 - `UserAuditLog` y `AccessLog` son registros históricos inmutables; por eso no exponen métodos modificadores.
+- `User`, sus perfiles, `Branch` y sus puntos de acceso utilizan asociaciones simples porque el sistema conserva el historial y aplica desactivación en lugar de eliminación en cascada.
+- `WeeklySchedule` y `ScheduledClass` mantienen composición porque una clase programada representa una entrada perteneciente a un cronograma semanal concreto.
 - `Branch` y `AccessPoint` son opcionales en `AccessLog` solamente cuando el QR es inexistente o fue alterado.
+- `Payment` se crea al confirmar la acreditación; por eso su estado inicial es `ACCREDITED` y `accreditedAt` y `expiresAt` son obligatorios. La creación y la confirmación se registran como acciones auditables diferenciadas, aunque formen parte de la misma operación.
 - Cada pago acreditado genera 30 días de vigencia sin acumular días anteriores.
 - Al anular un pago se recalculan la vigencia y el período inicial desde los pagos que permanezcan válidos.
 - El período inicial para ingresar sin apto aprobado dura 20 días desde el primer pago acreditado válido.
 - Un apto aprobado permanece válido sin fecha de vencimiento.
 - El QR identifica un punto de acceso fijo; el usuario se identifica mediante su sesión.
 - Las clases son informativas y no incluyen reservas, cupos, listas de espera ni asistencia.
-- Los servicios, controladores, repositorios y DTO se documentan en el diseño de capas y no se modelan como entidades.
+- Las entidades conservan solamente reglas resolubles con su propio estado. Las operaciones que consultan repositorios, coordinan varias entidades, verifican permisos o generan notificaciones corresponden a la capa de servicios.
+- Los servicios, controladores, repositorios y DTO se documentan en el diseño de capas y no se modelan como entidades del dominio.
+
+## Correspondencia de tipos con TypeScript
+
+| Tipo del diagrama | Representación prevista |
+|---|---|
+| `UUID` | `string`, validado con formato UUID |
+| `String` | `string` |
+| `Boolean` | `boolean` |
+| `Date` | `Date`, persistido como fecha sin hora |
+| `DateTime` | `Date`, persistido como `timestamptz` |
+| `Decimal` | `Prisma.Decimal` para importes; coordenadas convertidas de forma controlada |
 
 ## Decisión pendiente
 
