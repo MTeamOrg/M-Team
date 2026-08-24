@@ -178,8 +178,8 @@ direction TB
     + isRead() Boolean
   }
 
-User "1" -- "0..1" MemberProfile : has
-User "1" -- "0..1" TrainerProfile : has
+User "1" *-- "0..1" MemberProfile : has
+User "1" *-- "0..1" TrainerProfile : has
 User "1" -- "0..*" UserAuditLog : auditedUser
 User "1" -- "0..*" UserAuditLog : performedBy
 
@@ -191,7 +191,7 @@ User "1" -- "0..*" Payment : confirms
 User "0..1" -- "0..*" Payment : voids
 User "0..1" -- "0..*" MedicalCertificate : reviews
 
-Branch "1" -- "0..*" AccessPoint : contains
+Branch "1" *-- "0..*" AccessPoint : contains
 User "1" -- "0..*" AccessLog : attempts
 Branch "0..1" -- "0..*" AccessLog : receives
 AccessPoint "0..1" -- "0..*" AccessLog : records
@@ -228,7 +228,7 @@ User "1" -- "0..*" Notification : receives
 - `MemberProfile` y `TrainerProfile` son mutuamente excluyentes. `MEMBER` requiere `MemberProfile`, `TRAINER` requiere `TrainerProfile` y `ADMIN` no requiere ninguno.
 - `MembershipStatus` es un valor derivado que se calcula desde los pagos acreditados y no pertenece al estado persistente de ninguna entidad.
 - `UserAuditLog` y `AccessLog` son registros históricos inmutables; por eso no exponen métodos modificadores.
-- `User`, sus perfiles, `Branch` y sus puntos de acceso utilizan asociaciones simples porque el sistema conserva el historial y aplica desactivación en lugar de eliminación en cascada.
+- `MemberProfile` y `TrainerProfile` mantienen composición con `User` porque son perfiles complementarios sin identidad independiente dentro del dominio. `AccessPoint` mantiene composición con `Branch` porque pertenece a una sede concreta. La desactivación preserva el historial sin cambiar esta relación conceptual de pertenencia.
 - `WeeklySchedule` y `ScheduledClass` mantienen composición porque una clase programada representa una entrada perteneciente a un cronograma semanal concreto.
 - `Branch` y `AccessPoint` son opcionales en `AccessLog` solamente cuando el QR es inexistente o fue alterado.
 - `Payment` se crea al confirmar la acreditación; por eso su estado inicial es `ACCREDITED` y `accreditedAt` y `expiresAt` son obligatorios. La creación y la confirmación se registran como acciones auditables diferenciadas, aunque formen parte de la misma operación.
