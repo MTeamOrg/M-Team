@@ -1,4 +1,4 @@
-# Modelo de dominio de M-Team
+# Diagrama de clases de M-Team
 
 Esta primera versión representa los conceptos del negocio definidos en el alcance. No incluye controladores, servicios, repositorios, JWT ni componentes de la interfaz.
 
