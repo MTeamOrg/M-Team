@@ -1,8 +1,6 @@
 # Diagramas de secuencia
 
-Estos diagramas documentan las interacciones principales del prototipo de M-Team. El documento de alcance es la fuente de verdad y el tablero de [FigJam](https://www.figma.com/board/FhS5ih1AQYb96UFzcbGGR3) contiene su versión visual editable.
-
-Los diagramas representan responsabilidades conceptuales. `WebApp` corresponde a la interfaz web, `API` al backend de M-Team y `Database` a la persistencia del sistema.
+Estos diagramas documentan las interacciones principales del prototipo de M-Team. Los diagramas representan responsabilidades conceptuales. `WebApp` corresponde a la interfaz web, `API` al backend de M-Team y `Database` a la persistencia del sistema.
 
 ## Registro e inicio de sesión
 
