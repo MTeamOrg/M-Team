@@ -48,11 +48,14 @@ sequenceDiagram
     API->>Database: Obtener pagos
     Database-->>API: Socio e historial
     API-->>WebApp: Mostrar resumen
-    Administrador->>WebApp: Ingresar pago
-    WebApp-->>Administrador: Mostrar confirmación
+    Administrador->>WebApp: Ingresar datos del pago
+    WebApp->>API: Crear pago
+    API->>Database: Guardar pago pendiente
+    Database-->>API: Pago creado
+    API-->>WebApp: Mostrar resumen previo
     Administrador->>WebApp: Confirmar pago
     WebApp->>API: Acreditar pago
-    API->>Database: Guardar pago
+    API->>Database: Actualizar pago y vencimiento
     Database-->>API: Pago acreditado
     API-)Notificaciones: Informar acreditación
     API-->>WebApp: Pago confirmado
@@ -88,7 +91,10 @@ sequenceDiagram
     Administrador->>WebApp: Aprobar o rechazar
     WebApp->>API: Registrar decisión
     API->>Database: Actualizar estado
+    Database-->>API: Revisión registrada
     API-)Notificaciones: Informar resultado
+    API-->>WebApp: Revisión confirmada
+    WebApp-->>Administrador: Mostrar resultado
 ```
 
 El resultado de la revisión puede ser aprobado o rechazado con una observación. Cada nueva carga queda pendiente y el historial se conserva.
@@ -102,15 +108,13 @@ sequenceDiagram
     participant WebApp
     participant API
     participant Database
-    participant PuntoAcceso
 
     Usuario->>WebApp: Abrir acceso QR
     WebApp-->>Usuario: Solicitar cámara
     Usuario->>WebApp: Autorizar cámara
-    WebApp->>PuntoAcceso: Escanear QR fijo
-    PuntoAcceso-->>WebApp: Identificador del punto
-    WebApp->>API: Validar ingreso
-    API->>Database: Consultar usuario y punto
+    Usuario->>WebApp: Escanear QR fijo
+    WebApp->>API: Enviar token del QR
+    API->>Database: Consultar token y usuario
     Database-->>API: Estados vigentes
     API->>Database: Registrar intento
     Database-->>API: Acceso registrado
@@ -146,6 +150,9 @@ sequenceDiagram
     Administrador->>WebApp: Copiar semana anterior
     WebApp->>API: Solicitar copia
     API->>Database: Crear nueva semana
+    Database-->>API: Nueva semana creada
+    API-->>WebApp: Copia confirmada
+    WebApp-->>Administrador: Mostrar nueva semana
 ```
 
 El cronograma es informativo. No incluye reservas, cupos, listas de espera ni asistencia.
