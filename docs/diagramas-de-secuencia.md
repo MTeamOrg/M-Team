@@ -1,0 +1,180 @@
+# Diagramas de secuencia
+
+Estos diagramas documentan las interacciones principales del prototipo de M-Team. El documento de alcance es la fuente de verdad y el tablero de [FigJam](https://www.figma.com/board/FhS5ih1AQYb96UFzcbGGR3) contiene su versión visual editable.
+
+Los diagramas representan responsabilidades conceptuales. `WebApp` corresponde a la interfaz web, `API` al backend de M-Team y `Database` a la persistencia del sistema.
+
+## Registro e inicio de sesión
+
+```mermaid
+sequenceDiagram
+    title Registro e inicio de sesión
+    participant Socio
+    participant WebApp
+    participant API
+    participant Database
+
+    Socio->>WebApp: Abrir registro
+    WebApp-->>Socio: Mostrar formulario
+    Socio->>WebApp: Enviar datos
+    WebApp->>API: Crear cuenta
+    API->>Database: Guardar socio
+    Database-->>API: Cuenta creada
+    API-->>WebApp: Registro exitoso
+    WebApp-->>Socio: Mostrar inicio de sesión
+    Socio->>WebApp: Enviar credenciales
+    WebApp->>API: Autenticar usuario
+    API->>Database: Consultar usuario
+    Database-->>API: Usuario y estado
+    API-->>WebApp: Sesión iniciada
+    WebApp-->>Socio: Mostrar panel
+```
+
+La recuperación automática por correo no forma parte del alcance. Cuando sea necesario restablecer una contraseña, el socio deberá solicitarlo a un administrador.
+
+## Acreditación de un pago
+
+```mermaid
+sequenceDiagram
+    title Acreditación de un pago
+    participant Administrador
+    participant WebApp
+    participant API
+    participant Database
+    participant Notificaciones
+
+    Administrador->>WebApp: Buscar socio
+    WebApp->>API: Consultar socio
+    API->>Database: Obtener pagos
+    Database-->>API: Socio e historial
+    API-->>WebApp: Mostrar resumen
+    Administrador->>WebApp: Ingresar pago
+    WebApp-->>Administrador: Mostrar confirmación
+    Administrador->>WebApp: Confirmar pago
+    WebApp->>API: Acreditar pago
+    API->>Database: Guardar pago
+    Database-->>API: Pago acreditado
+    API-)Notificaciones: Informar acreditación
+    API-->>WebApp: Pago confirmado
+    WebApp-->>Administrador: Mostrar comprobante
+```
+
+La acreditación es una operación administrativa. El sistema no incorpora pagos en línea ni planes de membresía.
+
+## Carga y revisión del apto médico
+
+```mermaid
+sequenceDiagram
+    title Carga y revisión del apto médico
+    participant Socio
+    participant WebApp
+    participant API
+    participant Database
+    participant Administrador
+    participant Notificaciones
+
+    Socio->>WebApp: Abrir apto médico
+    WebApp-->>Socio: Mostrar estado actual
+    Socio->>WebApp: Seleccionar archivo
+    WebApp->>API: Cargar certificado
+    API->>Database: Guardar apto pendiente
+    Database-->>API: Carga registrada
+    API-->>WebApp: Estado pendiente
+    Administrador->>WebApp: Abrir revisión
+    WebApp->>API: Consultar apto
+    API->>Database: Obtener certificado
+    Database-->>API: Certificado pendiente
+    API-->>WebApp: Mostrar documento
+    Administrador->>WebApp: Aprobar o rechazar
+    WebApp->>API: Registrar decisión
+    API->>Database: Actualizar estado
+    API-)Notificaciones: Informar resultado
+```
+
+El resultado de la revisión puede ser aprobado o rechazado con una observación. Cada nueva carga queda pendiente y el historial se conserva.
+
+## Validación de acceso mediante QR
+
+```mermaid
+sequenceDiagram
+    title Validación de acceso mediante QR
+    participant Usuario
+    participant WebApp
+    participant API
+    participant Database
+    participant PuntoAcceso
+
+    Usuario->>WebApp: Abrir acceso QR
+    WebApp-->>Usuario: Solicitar cámara
+    Usuario->>WebApp: Autorizar cámara
+    WebApp->>PuntoAcceso: Escanear QR fijo
+    PuntoAcceso-->>WebApp: Identificador del punto
+    WebApp->>API: Validar ingreso
+    API->>Database: Consultar usuario y punto
+    Database-->>API: Estados vigentes
+    API->>Database: Registrar intento
+    Database-->>API: Acceso registrado
+    API-->>WebApp: Permitido o rechazado
+    WebApp-->>Usuario: Mostrar resultado
+```
+
+El QR pertenece al punto de acceso físico, no al usuario. Un rechazo puede deberse a un QR inválido, una cuenta inactiva, una cuota vencida, un apto no válido o una sede o punto de acceso desactivados.
+
+## Gestión del cronograma semanal
+
+```mermaid
+sequenceDiagram
+    title Gestión del cronograma semanal
+    participant Administrador
+    participant WebApp
+    participant API
+    participant Database
+    participant Notificaciones
+
+    Administrador->>WebApp: Abrir cronograma
+    WebApp->>API: Consultar semana
+    API->>Database: Obtener clases
+    Database-->>API: Cronograma semanal
+    API-->>WebApp: Mostrar cronograma
+    Administrador->>WebApp: Crear o modificar clase
+    WebApp->>API: Validar datos
+    API->>Database: Guardar cambios
+    Database-->>API: Cronograma actualizado
+    API-)Notificaciones: Informar cambio
+    API-->>WebApp: Operación exitosa
+    WebApp-->>Administrador: Mostrar cronograma
+    Administrador->>WebApp: Copiar semana anterior
+    WebApp->>API: Solicitar copia
+    API->>Database: Crear nueva semana
+```
+
+El cronograma es informativo. No incluye reservas, cupos, listas de espera ni asistencia.
+
+## Consulta de notificaciones
+
+```mermaid
+sequenceDiagram
+    title Consulta de notificaciones
+    participant Usuario
+    participant WebApp
+    participant API
+    participant Database
+
+    Usuario->>WebApp: Abrir notificaciones
+    WebApp->>API: Consultar notificaciones
+    API->>Database: Obtener notificaciones
+    Database-->>API: Lista y estados
+    API-->>WebApp: Mostrar resultados
+    Usuario->>WebApp: Abrir notificación
+    WebApp->>API: Marcar como leída
+    API->>Database: Actualizar estado
+    Database-->>API: Estado actualizado
+    API-->>WebApp: Confirmar lectura
+    WebApp-->>Usuario: Mostrar detalle
+```
+
+Las notificaciones son internas y conservan su historial. El alcance no contempla chat ni mensajería entre usuarios.
+
+## Límites del alcance
+
+Estos flujos no incorporan planes de membresía, pagos en línea, reservas, cupos, listas de espera, asistencia, rutinas, alumnos asignados, evaluaciones, beneficios, referidos, QR personal, chat ni una aplicación móvil nativa.
