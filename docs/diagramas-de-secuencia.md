@@ -14,20 +14,20 @@ sequenceDiagram
     participant API
     participant Database
 
-    Socio->>WebApp: Abrir registro
-    WebApp-->>Socio: Mostrar formulario
-    Socio->>WebApp: Enviar datos
-    WebApp->>API: Crear cuenta
-    API->>Database: Guardar socio
-    Database-->>API: Cuenta creada
-    API-->>WebApp: Registro exitoso
-    WebApp-->>Socio: Mostrar inicio de sesión
-    Socio->>WebApp: Enviar credenciales
-    WebApp->>API: Autenticar usuario
-    API->>Database: Consultar usuario
-    Database-->>API: Usuario y estado
-    API-->>WebApp: Sesión iniciada
-    WebApp-->>Socio: Mostrar panel
+    Socio->>+WebApp: Abrir registro
+    WebApp-->>-Socio: Mostrar formulario
+    Socio->>+WebApp: Enviar datos
+    WebApp->>+API: Crear cuenta
+    API->>+Database: Guardar socio
+    Database-->>-API: Cuenta creada
+    API-->>-WebApp: Registro exitoso
+    WebApp-->>-Socio: Mostrar inicio de sesión
+    Socio->>+WebApp: Enviar credenciales
+    WebApp->>+API: Autenticar usuario
+    API->>+Database: Consultar usuario
+    Database-->>-API: Usuario y estado
+    API-->>-WebApp: Sesión iniciada
+    WebApp-->>-Socio: Mostrar panel
 ```
 
 La recuperación automática por correo no forma parte del alcance. Cuando sea necesario restablecer una contraseña, el socio deberá solicitarlo a un administrador.
@@ -43,23 +43,25 @@ sequenceDiagram
     participant Database
     participant Notificaciones
 
-    Administrador->>WebApp: Buscar socio
-    WebApp->>API: Consultar socio
-    API->>Database: Obtener pagos
-    Database-->>API: Socio e historial
-    API-->>WebApp: Mostrar resumen
-    Administrador->>WebApp: Ingresar datos del pago
-    WebApp->>API: Crear pago
-    API->>Database: Guardar pago pendiente
-    Database-->>API: Pago creado
-    API-->>WebApp: Mostrar resumen previo
-    Administrador->>WebApp: Confirmar pago
-    WebApp->>API: Acreditar pago
-    API->>Database: Actualizar pago y vencimiento
-    Database-->>API: Pago acreditado
+    Administrador->>+WebApp: Buscar socio
+    WebApp->>+API: Consultar socio
+    API->>+Database: Obtener pagos
+    Database-->>-API: Socio e historial
+    API-->>-WebApp: Mostrar resumen
+    WebApp-->>-Administrador: Presentar socio
+    Administrador->>+WebApp: Ingresar datos del pago
+    WebApp->>+API: Crear pago
+    API->>+Database: Guardar pago pendiente
+    Database-->>-API: Pago creado
+    API-->>-WebApp: Mostrar resumen previo
+    WebApp-->>-Administrador: Presentar resumen previo
+    Administrador->>+WebApp: Confirmar pago
+    WebApp->>+API: Acreditar pago
+    API->>+Database: Actualizar pago y vencimiento
+    Database-->>-API: Pago acreditado
     API-)Notificaciones: Informar acreditación
-    API-->>WebApp: Pago confirmado
-    WebApp-->>Administrador: Mostrar comprobante
+    API-->>-WebApp: Pago confirmado
+    WebApp-->>-Administrador: Mostrar comprobante
 ```
 
 La acreditación es una operación administrativa. El sistema no incorpora pagos en línea ni planes de membresía.
@@ -76,25 +78,27 @@ sequenceDiagram
     participant Administrador
     participant Notificaciones
 
-    Socio->>WebApp: Abrir apto médico
-    WebApp-->>Socio: Mostrar estado actual
-    Socio->>WebApp: Seleccionar archivo
-    WebApp->>API: Cargar certificado
-    API->>Database: Guardar apto pendiente
-    Database-->>API: Carga registrada
-    API-->>WebApp: Estado pendiente
-    Administrador->>WebApp: Abrir revisión
-    WebApp->>API: Consultar apto
-    API->>Database: Obtener certificado
-    Database-->>API: Certificado pendiente
-    API-->>WebApp: Mostrar documento
-    Administrador->>WebApp: Aprobar o rechazar
-    WebApp->>API: Registrar decisión
-    API->>Database: Actualizar estado
-    Database-->>API: Revisión registrada
+    Socio->>+WebApp: Abrir apto médico
+    WebApp-->>-Socio: Mostrar estado actual
+    Socio->>+WebApp: Seleccionar archivo
+    WebApp->>+API: Cargar certificado
+    API->>+Database: Guardar apto pendiente
+    Database-->>-API: Carga registrada
+    API-->>-WebApp: Estado pendiente
+    WebApp-->>-Socio: Confirmar carga
+    Administrador->>+WebApp: Abrir revisión
+    WebApp->>+API: Consultar apto
+    API->>+Database: Obtener certificado
+    Database-->>-API: Certificado pendiente
+    API-->>-WebApp: Mostrar documento
+    WebApp-->>-Administrador: Presentar documento
+    Administrador->>+WebApp: Aprobar o rechazar
+    WebApp->>+API: Registrar decisión
+    API->>+Database: Actualizar estado
+    Database-->>-API: Revisión registrada
     API-)Notificaciones: Informar resultado
-    API-->>WebApp: Revisión confirmada
-    WebApp-->>Administrador: Mostrar resultado
+    API-->>-WebApp: Revisión confirmada
+    WebApp-->>-Administrador: Mostrar resultado
 ```
 
 El resultado de la revisión puede ser aprobado o rechazado con una observación. Cada nueva carga queda pendiente y el historial se conserva.
@@ -109,17 +113,18 @@ sequenceDiagram
     participant API
     participant Database
 
-    Usuario->>WebApp: Abrir acceso QR
-    WebApp-->>Usuario: Solicitar cámara
-    Usuario->>WebApp: Autorizar cámara
-    Usuario->>WebApp: Escanear QR fijo
-    WebApp->>API: Enviar token del QR
-    API->>Database: Consultar token y usuario
-    Database-->>API: Estados vigentes
-    API->>Database: Registrar intento
-    Database-->>API: Acceso registrado
-    API-->>WebApp: Permitido o rechazado
-    WebApp-->>Usuario: Mostrar resultado
+    Usuario->>+WebApp: Abrir acceso QR
+    WebApp-->>-Usuario: Solicitar cámara
+    Usuario->>+WebApp: Autorizar cámara
+    WebApp-->>-Usuario: Activar escáner
+    Usuario->>+WebApp: Escanear QR fijo
+    WebApp->>+API: Enviar token del QR
+    API->>+Database: Consultar token y usuario
+    Database-->>-API: Estados vigentes
+    API->>+Database: Registrar intento
+    Database-->>-API: Acceso registrado
+    API-->>-WebApp: Permitido o rechazado
+    WebApp-->>-Usuario: Mostrar resultado
 ```
 
 El QR pertenece al punto de acceso físico, no al usuario. Un rechazo puede deberse a un QR inválido, una cuenta inactiva, una cuota vencida, un apto no válido o una sede o punto de acceso desactivados.
@@ -135,24 +140,25 @@ sequenceDiagram
     participant Database
     participant Notificaciones
 
-    Administrador->>WebApp: Abrir cronograma
-    WebApp->>API: Consultar semana
-    API->>Database: Obtener clases
-    Database-->>API: Cronograma semanal
-    API-->>WebApp: Mostrar cronograma
-    Administrador->>WebApp: Crear o modificar clase
-    WebApp->>API: Validar datos
-    API->>Database: Guardar cambios
-    Database-->>API: Cronograma actualizado
+    Administrador->>+WebApp: Abrir cronograma
+    WebApp->>+API: Consultar semana
+    API->>+Database: Obtener clases
+    Database-->>-API: Cronograma semanal
+    API-->>-WebApp: Mostrar cronograma
+    WebApp-->>-Administrador: Presentar cronograma
+    Administrador->>+WebApp: Crear o modificar clase
+    WebApp->>+API: Validar datos
+    API->>+Database: Guardar cambios
+    Database-->>-API: Cronograma actualizado
     API-)Notificaciones: Informar cambio
-    API-->>WebApp: Operación exitosa
-    WebApp-->>Administrador: Mostrar cronograma
-    Administrador->>WebApp: Copiar semana anterior
-    WebApp->>API: Solicitar copia
-    API->>Database: Crear nueva semana
-    Database-->>API: Nueva semana creada
-    API-->>WebApp: Copia confirmada
-    WebApp-->>Administrador: Mostrar nueva semana
+    API-->>-WebApp: Operación exitosa
+    WebApp-->>-Administrador: Mostrar cronograma
+    Administrador->>+WebApp: Copiar semana anterior
+    WebApp->>+API: Solicitar copia
+    API->>+Database: Crear nueva semana
+    Database-->>-API: Nueva semana creada
+    API-->>-WebApp: Copia confirmada
+    WebApp-->>-Administrador: Mostrar nueva semana
 ```
 
 El cronograma es informativo. No incluye reservas, cupos, listas de espera ni asistencia.
@@ -167,17 +173,18 @@ sequenceDiagram
     participant API
     participant Database
 
-    Usuario->>WebApp: Abrir notificaciones
-    WebApp->>API: Consultar notificaciones
-    API->>Database: Obtener notificaciones
-    Database-->>API: Lista y estados
-    API-->>WebApp: Mostrar resultados
-    Usuario->>WebApp: Abrir notificación
-    WebApp->>API: Marcar como leída
-    API->>Database: Actualizar estado
-    Database-->>API: Estado actualizado
-    API-->>WebApp: Confirmar lectura
-    WebApp-->>Usuario: Mostrar detalle
+    Usuario->>+WebApp: Abrir notificaciones
+    WebApp->>+API: Consultar notificaciones
+    API->>+Database: Obtener notificaciones
+    Database-->>-API: Lista y estados
+    API-->>-WebApp: Mostrar resultados
+    WebApp-->>-Usuario: Presentar notificaciones
+    Usuario->>+WebApp: Abrir notificación
+    WebApp->>+API: Marcar como leída
+    API->>+Database: Actualizar estado
+    Database-->>-API: Estado actualizado
+    API-->>-WebApp: Confirmar lectura
+    WebApp-->>-Usuario: Mostrar detalle
 ```
 
 Las notificaciones son internas y conservan su historial. El alcance no contempla chat ni mensajería entre usuarios.
