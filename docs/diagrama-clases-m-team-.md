@@ -146,12 +146,12 @@ class Event {
   - title: String
   - description: String
   - startsAt: DateTime
-  - location: String
+  - branch: Branch
   - imageUrl: String
   - status: EventStatus
   + updateDetails(title: String, description: String) void
   + reschedule(startsAt: DateTime) void
-  + changeLocation(location: String) void
+  + changeBranch(branch: Branch) void
   + updateImage(imageUrl: String) void
   + saveAsDraft() void
   + publish() void
@@ -204,6 +204,7 @@ WeeklySchedule "1" *-- "0..*" ScheduledClass : contains
 Branch "1" -- "0..*" ScheduledClass : hosts
 TrainerProfile "0..1" -- "0..*" ScheduledClass : teaches
 User "1" -- "0..*" Event : creates
+Branch "1" -- "0..*" Event : hosts
 User "1" -- "0..*" NewsPost : creates
 User "1" -- "0..*" Notification : receives
 Branch "0..1" -- "0..*" AccessLog : receives
